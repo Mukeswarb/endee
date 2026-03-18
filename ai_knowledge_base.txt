@@ -1,0 +1,63 @@
+Introduction to Artificial Intelligence
+
+Artificial Intelligence (AI) is the simulation of human intelligence processes by machines,
+especially computer systems. These processes include learning, reasoning, and self-correction.
+AI has become one of the most transformative technologies of our time.
+
+Machine Learning
+
+Machine learning is a subset of AI that gives systems the ability to automatically learn
+and improve from experience without being explicitly programmed. It focuses on developing
+computer programs that can access data and use it to learn for themselves.
+
+Supervised learning uses labeled training data to learn a mapping from inputs to outputs.
+Unsupervised learning finds hidden patterns in data without labeled examples.
+Reinforcement learning trains agents to make decisions through trial and error.
+
+Deep Learning
+
+Deep learning is a subfield of machine learning that uses neural networks with many layers,
+called deep neural networks. These networks can learn representations of data with multiple
+levels of abstraction, similar to how the human brain works.
+
+Convolutional Neural Networks (CNNs) are used for image recognition and processing.
+Recurrent Neural Networks (RNNs) and Transformers are used for sequential data like text.
+Large Language Models (LLMs) are transformer-based models trained on vast text corpora.
+
+Natural Language Processing
+
+Natural Language Processing (NLP) is a branch of AI that helps computers understand,
+interpret, and generate human language in a useful way. NLP bridges the gap between
+human communication and computer understanding.
+
+Applications of NLP include machine translation, sentiment analysis, chatbots,
+text summarization, named entity recognition, and question answering systems.
+
+Vector Databases
+
+A vector database is a type of database that stores data as high-dimensional vectors —
+mathematical representations of features or attributes. They enable fast similarity search
+over millions or billions of vectors.
+
+Vector databases are fundamental to modern AI applications. They power semantic search,
+recommendation engines, and Retrieval Augmented Generation (RAG) systems.
+
+Endee is a high-performance open source vector database. It is designed to handle up to
+1 billion vectors on a single node. Endee uses HNSW (Hierarchical Navigable Small World)
+indexing for fast approximate nearest neighbor search and supports cosine similarity.
+
+Retrieval Augmented Generation (RAG)
+
+Retrieval Augmented Generation is an AI framework that improves the quality of LLM responses
+by grounding them in external knowledge. Instead of relying solely on the model's training
+data, RAG retrieves relevant documents and provides them as context to the LLM.
+
+The RAG pipeline works as follows:
+1. Documents are split into chunks and embedded into vectors.
+2. Vectors are stored in a vector database like Endee.
+3. When a user asks a question, it is embedded and used to retrieve similar chunks.
+4. The retrieved chunks are passed as context to the LLM along with the question.
+5. The LLM generates an answer grounded in the retrieved information.
+
+RAG significantly reduces hallucinations and enables LLMs to answer questions about
+private or recent data that was not part of their training.

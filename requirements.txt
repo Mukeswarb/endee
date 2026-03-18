@@ -1,0 +1,4 @@
+endee
+sentence-transformers
+groq
+streamlit

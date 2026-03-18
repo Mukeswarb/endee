@@ -1,139 +1,247 @@
-<p align="center">
-  <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
-      <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo-light.svg">
-      <img height="100" alt="Endee" src="docs/assets/logo-dark.svg">
-  </picture>
-</p>
+# 📄 RAG Document Q&A — Powered by Endee Vector Database
 
-<p align="center">
-    <b>High-performance open-source vector database for AI search, RAG, semantic search, and hybrid retrieval.</b>
-</p>
+A beginner-friendly **Retrieval Augmented Generation (RAG)** application that lets you upload any text document and ask natural language questions about it. Built with **[Endee](https://github.com/endee-io/endee)** as the vector database.
 
-<p align="center">
-    <a href="./docs/getting-started.md"><img src="https://img.shields.io/badge/Quick_Start-Local_Setup-success?style=flat-square" alt="Quick Start"></a>
-    <a href="https://docs.endee.io/quick-start"><img src="https://img.shields.io/badge/Docs-Quick_Start-success?style=flat-square" alt="Docs"></a>
-    <a href="https://github.com/endee-io/endee/blob/master/LICENSE"><img src="https://img.shields.io/github/license/endee-io/endee?style=flat-square" alt="License"></a>
-    <a href="https://discord.gg/5HFGqDZQE3"><img src="https://img.shields.io/badge/Discord-Join_Chat-5865F2?logo=discord&style=flat-square" alt="Discord"></a>
-    <a href="https://endee.io/"><img src="https://img.shields.io/badge/Website-Endee-111111?style=flat-square" alt="Website"></a>
-    <!-- <a href="https://endee.io/benchmarks"><img src="https://img.shields.io/badge/Benchmarks-Coming_Soon-1F8B4C?style=flat-square" alt="Benchmarks"></a> -->
-    <!-- <a href="https://endee.io/cloud"><img src="https://img.shields.io/badge/Cloud-Coming_Soon-2496ED?style=flat-square" alt="Cloud"></a> -->
-</p>
+---
 
-<p align="center">
-<strong><a href="./docs/getting-started.md">Quick Start</a> • <a href="#why-endee">Why Endee</a> • <a href="#use-cases">Use Cases</a> • <a href="#features">Features</a> • <a href="#api-and-clients">API and Clients</a> • <a href="#docs-and-links">Docs</a> • <a href="#community-and-contact">Contact</a></strong>
-</p>
+## 🎯 Project Overview
 
-# Endee: Open-Source Vector Database for AI Search
+This project demonstrates a practical RAG pipeline where:
 
-**Endee** is a high-performance open-source vector database built for AI search and retrieval workloads. It is designed for teams building **RAG pipelines**, **semantic search**, **hybrid search**, recommendation systems, and filtered vector retrieval APIs that need production-oriented performance and control.
+1. You upload a `.txt` document
+2. The text is split into chunks and embedded using `sentence-transformers`
+3. Embeddings are stored in **Endee**, a high-performance vector database
+4. When you ask a question, it is embedded and used to retrieve the most relevant chunks from Endee
+5. The retrieved chunks are passed to a free LLM (Groq/llama3) to generate a grounded answer
 
-Endee combines vector search with filtering, sparse retrieval support, backup workflows, and deployment flexibility across local builds and Docker-based environments. The project is implemented in C++ and optimized for modern CPU targets, including AVX2, AVX512, NEON, and SVE2.
+**Use Cases:**
+- Q&A over private documents (notes, manuals, reports)
+- Knowledge base chatbot
+- Study assistant
 
-If you want the fastest path to evaluate Endee locally, start with the [Getting Started guide](./docs/getting-started.md) or the hosted docs at [docs.endee.io](https://docs.endee.io/quick-start).
+---
 
-## Why Endee
+## 🏗️ System Design
 
-- Built as a dedicated vector database for AI applications, search systems, and retrieval-heavy workloads.
-- Supports dense vector retrieval plus sparse search capabilities for hybrid search use cases.
-- Includes payload filtering for metadata-aware retrieval and application-specific query logic.
-- Ships with operational features already documented in this repo, including backup flows and runtime observability.
-- Offers flexible deployment paths: local scripts, manual builds, Docker images, and prebuilt registry images.
+```
+┌──────────────────────────────────────────────────────────┐
+│                     INGESTION PIPELINE                   │
+│                                                          │
+│  .txt File  ──▶  Chunker  ──▶  Embedder  ──▶  Endee DB  │
+│             (500 char,       (MiniLM-L6,    (HNSW index, │
+│              100 overlap)     384-dim)       cosine sim) │
+└──────────────────────────────────────────────────────────┘
 
-## Getting Started
-
-The full installation, build, Docker, runtime, and authentication instructions are in [docs/getting-started.md](./docs/getting-started.md).
-
-Fastest local path:
-
-```bash
-chmod +x ./install.sh ./run.sh
-./install.sh --release --avx2
-./run.sh
+┌──────────────────────────────────────────────────────────┐
+│                      QUERY PIPELINE                      │
+│                                                          │
+│  User Query ──▶  Embedder ──▶  Endee Search (top-k=5)   │
+│                                        │                 │
+│                                        ▼                 │
+│                              Retrieved Chunks            │
+│                                        │                 │
+│                                        ▼                 │
+│                           LLM (llama3-8b via Groq)       │
+│                                        │                 │
+│                                        ▼                 │
+│                              Grounded Answer             │
+└──────────────────────────────────────────────────────────┘
 ```
 
-The server listens on port `8080`. For detailed setup paths, supported operating systems, CPU optimization flags, Docker usage, and authentication examples, use:
+### Components
 
-- [Getting Started](./docs/getting-started.md)
-- [Hosted Quick Start Docs](https://docs.endee.io/quick-start)
+| Component | Role |
+|---|---|
+| **Endee** | Vector database — stores and retrieves document embeddings |
+| **sentence-transformers** | `all-MiniLM-L6-v2` model for 384-dim text embeddings |
+| **Groq (llama3-8b-8192)** | Free, fast LLM for answer generation |
+| **Streamlit** | Web interface |
+| **Python CLI** | Lightweight command-line interface |
 
-## Use Cases
+---
 
-### RAG and AI Retrieval
+## 🗂️ Project Structure
 
-Use Endee as the retrieval layer for question answering, chat assistants, copilots, and other RAG applications that need fast vector search with metadata-aware filtering.
+```
+rag-docqa-endee/
+├── rag_engine.py        # Core RAG logic: chunking, embedding, Endee integration, LLM
+├── main.py              # CLI interface (ingest / ask / demo)
+├── app.py               # Streamlit web UI
+├── requirements.txt     # Python dependencies
+├── .env.example         # Environment variable template
+├── sample_docs/
+│   └── ai_knowledge_base.txt   # Sample document for testing
+└── README.md
+```
 
-### Agentic AI and AI Agent Memory
+---
 
-Use Endee as the long-term memory and context retrieval layer for AI agents built with frameworks like LangChain, CrewAI, AutoGen, and LlamaIndex. Store and retrieve past observations, tool outputs, conversation history, and domain knowledge mid-execution with low-latency filtered vector search, so your autonomous agents get the right context without stalling their reasoning loop.
+## 🔑 How Endee Is Used
 
-### Semantic Search
+Endee serves as the **core vector store** of this project. Here is exactly how it is integrated:
 
-Build semantic search experiences for documents, products, support content, and knowledge bases using vector similarity search instead of exact keyword-only matching.
+### 1. Connecting to Endee
+```python
+from endee import Endee, Precision
 
-### Hybrid Search
+client = Endee(auth_token)          # connect to local Endee server
+client.set_base_url("http://localhost:8080/api/v1")
+```
 
-Combine dense retrieval, sparse vectors, and filtering to improve relevance for search workflows where both semantic understanding and term-level precision matter.
+### 2. Creating an Index
+```python
+client.create_index(
+    name="rag_documents",
+    dimension=384,           # matches MiniLM-L6-v2 output size
+    space_type="cosine",     # cosine similarity for semantic search
+    precision=Precision.INT8 # quantized for efficiency
+)
+```
 
-### Recommendations and Matching
+### 3. Storing Embeddings (Upsert)
+```python
+index = client.get_index(name="rag_documents")
+index.upsert([
+    {
+        "id": "chunk-uuid",
+        "vector": [0.12, 0.45, ...],   # 384-dim embedding
+        "meta": {"text": "chunk text", "source": "file.txt"}
+    }
+])
+```
 
-Support recommendation, similarity matching, and nearest-neighbor retrieval workflows across text, embeddings, and other high-dimensional representations.
+### 4. Semantic Search (Query)
+```python
+results = index.query(vector=query_embedding, top_k=5)
+# returns top-5 most similar chunks with similarity scores
+```
 
-## Features
+---
 
-- **Vector search** for AI retrieval and semantic similarity workloads.
-- **Hybrid retrieval support** with sparse vector capabilities documented in [docs/sparse.md](./docs/sparse.md).
-- **Payload filtering** for structured retrieval logic documented in [docs/filter.md](./docs/filter.md).
-- **Backup APIs and flows** documented in [docs/backup-system.md](./docs/backup-system.md).
-- **Operational logging and instrumentation** documented in [docs/logs.md](./docs/logs.md) and [docs/mdbx-instrumentation.md](./docs/mdbx-instrumentation.md).
-- **CPU-targeted builds** for AVX2, AVX512, NEON, and SVE2 deployments.
-- **Docker deployment options** for local and server environments.
+## ⚙️ Setup Instructions
 
-## API and Clients
+### Prerequisites
+- Python 3.9+
+- Docker & Docker Compose (to run Endee)
+- Free Groq API key from [console.groq.com](https://console.groq.com) *(optional but recommended)*
 
-Endee exposes an HTTP API for managing indexes and serving retrieval workloads. The current repo documentation and examples focus on running the server directly and calling its API endpoints.
+---
 
-Current developer entry points:
+### Step 1 — Star & Fork Endee ⭐
 
-- [Getting Started](./docs/getting-started.md) for local build and run flows
-- [Hosted Docs](https://docs.endee.io/quick-start) for product documentation
-- [Release Notes 1.0.0](https://github.com/endee-io/endee/releases/tag/1.0.0) for recent platform changes
+> **Required by the assignment.**
 
-## Docs and Links
+1. Go to [https://github.com/endee-io/endee](https://github.com/endee-io/endee)
+2. Click **⭐ Star**
+3. Click **Fork** → your GitHub account
 
-- [Getting Started](./docs/getting-started.md)
-- [Hosted Documentation](https://docs.endee.io/quick-start)
-- [Release Notes](https://github.com/endee-io/endee/releases/tag/1.0.0)
-- [Sparse Search](./docs/sparse.md)
-- [Filtering](./docs/filter.md)
-- [Backups](./docs/backup-system.md)
+---
 
-## Community and Contact
+### Step 2 — Clone This Repository
 
-- Join the community on [Discord](https://discord.gg/5HFGqDZQE3)
-- Visit the website at [endee.io](https://endee.io/)
-- For trademark or branding permissions, contact [enterprise@endee.io](mailto:enterprise@endee.io)
+```bash
+git clone https://github.com/<your-username>/rag-docqa-endee.git
+cd rag-docqa-endee
+```
 
-## Contributing
+---
 
-We welcome contributions from the community to help make vector search faster and more accessible for everyone.
+### Step 3 — Start Endee (Docker)
 
-- Submit pull requests for fixes, features, and improvements
-- Report bugs or performance issues through GitHub issues
-- Propose enhancements for search quality, performance, and deployment workflows
+```bash
+mkdir endee && cd endee
 
-## License
+# Create docker-compose.yml
+cat > docker-compose.yml << 'EOF'
+services:
+  endee:
+    image: endeeio/endee-server:latest
+    container_name: endee-server
+    ports:
+      - "8080:8080"
+    environment:
+      NDD_NUM_THREADS: 0
+      NDD_AUTH_TOKEN: ""
+    volumes:
+      - endee-data:/data
+    restart: unless-stopped
+volumes:
+  endee-data:
+EOF
 
-Endee is open source software licensed under the **Apache License 2.0**. See the [LICENSE](./LICENSE) file for full terms.
+docker compose up -d
+cd ..
+```
 
-## Trademark and Branding
+Verify it's running: open [http://localhost:8080](http://localhost:8080)
 
-“Endee” and the Endee logo are trademarks of Endee Labs.
+---
 
-The Apache License 2.0 does not grant permission to use the Endee name, logos, or branding in a way that suggests endorsement or affiliation.
+### Step 4 — Install Python Dependencies
 
-If you offer a hosted or managed service based on this software, you must use your own branding and avoid implying it is an official Endee service.
+```bash
+pip install -r requirements.txt
+```
 
-## Third-Party Software
+---
 
-This project includes or depends on third-party software components licensed under their respective open-source licenses. Use of those components is governed by their own license terms.
+### Step 5 — Configure Environment
+
+```bash
+cp .env.example .env
+# Edit .env and add your GROQ_API_KEY (free at console.groq.com)
+```
+
+---
+
+### Step 6 — Run the App
+
+**Option A — Web UI (Streamlit)**
+```bash
+streamlit run app.py
+# Opens at http://localhost:8501
+```
+
+**Option B — Command Line**
+```bash
+# Run a quick demo (no file needed)
+python main.py demo
+
+# Ingest your own document
+python main.py ingest sample_docs/ai_knowledge_base.txt
+
+# Ask a question
+python main.py ask "What is Retrieval Augmented Generation?"
+```
+
+---
+
+## 📸 Demo
+
+```
+❓ Question : What is Retrieval Augmented Generation?
+📚 Sources  : ai_knowledge_base.txt
+🔢 Chunks   : 5 retrieved
+
+💬 Answer:
+Retrieval Augmented Generation (RAG) is an AI framework that improves LLM responses
+by grounding them in external knowledge. It retrieves relevant document chunks from a
+vector database (like Endee) and provides them as context to the LLM, reducing
+hallucinations and enabling answers about private or recent data.
+```
+
+---
+
+## 🧠 Key Design Decisions
+
+- **Endee over other vector DBs** — Fast HNSW indexing, simple Python SDK, Docker-first, open source
+- **INT8 precision** — Reduces memory footprint with minimal accuracy loss
+- **Overlapping chunks** — 100-char overlap preserves context across chunk boundaries
+- **Cosine similarity** — Better than dot product for normalized text embeddings
+- **Groq (free tier)** — Fast LLM inference, no credit card required
+
+---
+
+## 📝 License
+
+MIT License — free to use and modify.
